@@ -1,0 +1,76 @@
+name: Track upstream EasyEffects releases
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Bump Version
+        run: |
+          set -e
+
+          # Upstream publishes tags (vX.Y.Z), not GitHub Releases,
+          # so releases/latest is not usable here. Read the tags directly.
+          TAG=$(git ls-remote --tags --refs https://github.com/wwmm/easyeffects.git \
+            | awk '{sub("refs/tags/", "", $2); print $2}' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V | tail -1)
+
+          if [ -z "$TAG" ]; then
+            echo "Could not determine the latest upstream tag"
+            exit 1
+          fi
+
+          VER=${TAG#v}
+          CUR=$(grep -m1 '^Version:' easyeffects.spec | awk '{print $2}')
+
+          if [ "$VER" = "$CUR" ]; then
+            echo "Everything is up to date ($CUR)"
+            exit 0
+          fi
+
+          # Never go backwards (e.g. after a manual bump to a newer version)
+          NEWEST=$(printf '%s\n%s\n' "$CUR" "$VER" | sort -V | tail -1)
+          if [ "$NEWEST" != "$VER" ]; then
+            echo "Upstream tag $VER is older than spec version $CUR, skipping"
+            exit 0
+          fi
+
+          # Make sure the tarball the spec will download really exists
+          curl -fsSIL -o /dev/null "https://github.com/wwmm/easyeffects/archive/v$VER/easyeffects-$VER.tar.gz"
+
+          echo "Bumping $CUR -> $VER"
+          sed -i -E "s/^(Version:[[:space:]]+).*/\1$VER/" easyeffects.spec
+          sed -i -E "s/^(Release:[[:space:]]+).*/\11%{?dist}/" easyeffects.spec
+
+          python3 - "$VER" <<'PYEOF'
+          import sys
+          from datetime import datetime, timezone
+
+          version = sys.argv[1]
+          date_str = datetime.now(timezone.utc).strftime('%a %b %d %Y')
+          entry = (
+              f'* {date_str} coffeeicus <coffeelover@coffeelover.uk> - {version}-1\n'
+              f'- Update to {version}\n'
+              '- Full changelog: https://wwmm.github.io/easyeffects/community/CHANGELOG.html\n'
+          )
+
+          with open('easyeffects.spec') as f:
+              spec = f.read()
+          spec = spec.replace('%changelog\n', f'%changelog\n{entry}\n', 1)
+          with open('easyeffects.spec', 'w') as f:
+              f.write(spec)
+          PYEOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Bump EasyEffects to v$VER"
+          git push
