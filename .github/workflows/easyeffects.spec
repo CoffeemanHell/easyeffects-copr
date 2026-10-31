@@ -1,0 +1,190 @@
+%global _binary_payload w22T0.zstdio
+
+Name:           easyeffects
+Version:        8.3.1
+Release:        1%{?dist}
+Summary:        Audio effects for PipeWire applications
+
+License:        GPL-3.0-or-later
+Url:            https://github.com/wwmm/easyeffects
+Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
+
+Provides:       pulseeffects = 6.1.1-1
+Obsoletes:      pulseeffects < 6.1.1-1
+
+BuildRequires:  cmake
+BuildRequires:  extra-cmake-modules
+BuildRequires:  gcc-c++
+BuildRequires:  libappstream-glib
+BuildRequires:  desktop-file-utils
+BuildRequires:  itstool
+
+# Qt dependencies
+BuildRequires:  cmake(Qt6Core)
+BuildRequires:  cmake(Qt6DBus)
+BuildRequires:  cmake(Qt6Graphs)
+BuildRequires:  cmake(Qt6Gui)
+BuildRequires:  cmake(Qt6Network)
+BuildRequires:  cmake(Qt6Qml)
+BuildRequires:  cmake(Qt6Quick)
+BuildRequires:  cmake(Qt6QuickControls2)
+BuildRequires:  cmake(Qt6Widgets)
+BuildRequires:  cmake(Qt6WebEngineQuick)
+
+# KF dependencies
+BuildRequires:  cmake(KF6ColorScheme)
+BuildRequires:  cmake(KF6Config)
+BuildRequires:  cmake(KF6ConfigWidgets)
+BuildRequires:  cmake(KF6CoreAddons)
+BuildRequires:  cmake(KF6I18n)
+BuildRequires:  cmake(KF6IconThemes)
+BuildRequires:  cmake(KF6Kirigami)
+BuildRequires:  cmake(KF6KirigamiAddons)
+BuildRequires:  cmake(KF6QQC2DesktopStyle)
+
+# QML dependencies
+BuildRequires:  qt6qml(org.kde.kirigami)
+
+# The rest...
+BuildRequires:  cmake(TBB)
+
+BuildRequires:  pkgconfig(libpipewire-0.3) >= 1.0.6
+BuildRequires:  pkgconfig(lilv-0) >= 0.24
+BuildRequires:  pkgconfig(libebur128) >= 1.2.6
+BuildRequires:  pkgconfig(fftw3)
+BuildRequires:  pkgconfig(fftw3f)
+BuildRequires:  pkgconfig(speexdsp)
+BuildRequires:  pkgconfig(nlohmann_json)
+BuildRequires:  pkgconfig(gsl)
+BuildRequires:  pkgconfig(libbs2b)
+BuildRequires:  pkgconfig(samplerate)
+BuildRequires:  pkgconfig(sndfile)
+BuildRequires:  pkgconfig(rnnoise)
+BuildRequires:  pkgconfig(soundtouch)
+BuildRequires:  pkgconfig(libportal)
+BuildRequires:  pkgconfig(libportal-qt6)
+BuildRequires:  pkgconfig(webrtc-audio-processing-2)
+
+BuildRequires:  zita-convolver-devel >= 3.1.0
+
+BuildRequires:  ladspa-devel
+BuildRequires:  pkgconfig(libmysofa)
+
+# Visual style stuff
+Requires:       breeze-icon-theme
+## Default theme in code
+Requires:       kf6-qqc2-desktop-style%{?_isa}
+## Upstream recommendation
+Recommends:     plasma-breeze%{?_isa}
+
+# Required runtime QML modules
+Requires:       qt6qml(org.kde.kirigami)
+Requires:       qt6qml(org.kde.kirigamiaddons.components)
+Requires:       qt6qml(QtGraphs)
+Requires:       qt6qml(QtWebEngine)
+
+
+Requires:       hicolor-icon-theme
+Requires:       dbus-common
+
+Recommends:     lv2-calf-plugins
+Recommends:     lv2-mdala-plugins
+Recommends:     lsp-plugins-lv2
+Recommends:     lv2-zam-plugins
+
+# The DPDFNet model of the Deep Noise Remover is loaded at runtime from the
+# LADSPA plugin libdpdfnet_ladspa.so (HushMic's plugin). Not a build dependency.
+# dpdfnet-ladspa ships only that plugin, without the HushMic tray application,
+# and is built in the same COPR project as this package.
+Recommends:     dpdfnet-ladspa
+
+
+# Because of QtWebEngine dependency
+ExclusiveArch:  %{qt6_qtwebengine_arches}
+
+
+%description
+Limiters, compressor, reverberation, high-pass filter, low pass filter,
+equalizer many more effects for PipeWire applications.
+
+%prep
+%autosetup
+
+
+%conf
+%cmake
+
+
+%build
+%cmake_build
+
+
+%install
+%cmake_install
+
+%find_lang %{name}
+
+
+%check
+appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/com.github.wwmm.%{name}.metainfo.xml
+
+
+%files -f %{name}.lang
+%doc README.md
+%license LICENSE
+%{_bindir}/%{name}
+%{_datadir}/applications/com.github.wwmm.%{name}.desktop
+%{_datadir}/icons/hicolor/scalable/apps/com.github.wwmm.%{name}{,-symbolic}.svg
+%{_datadir}/icons/hicolor/scalable/apps/com.github.wwmm.easyeffects-off-symbolic.svg
+%{_datadir}/metainfo/com.github.wwmm.%{name}.metainfo.xml
+
+
+%changelog
+* Sat Oct 31 2026 coffeeicus <coffeelover@coffeelover.uk> - 8.3.1-1
+- Initial COPR build, based on Fedora's easyeffects spec (8.2.8-2)
+- Update to 8.3.1
+- Add weak dependency on dpdfnet-ladspa for the DPDFNet model
+- Full changelog: https://wwmm.github.io/easyeffects/community/CHANGELOG.html
+
+* Fri Oct 23 2026 Jan Grulich <jgrulich@redhat.com> - 8.2.8-2
+- Rebuild (qt6)
+
+* Fri Jul 31 2026 Vasiliy Glazov <vascom2@gmail.com> - 8.2.8-1
+- Update to 8.2.8
+
+* Wed Jul 15 2026 Fedora Release Engineering <releng@fedoraproject.org> - 8.2.7-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_45_Mass_Rebuild
+
+* Mon Jul 06 2026 Vasiliy Glazov <vascom2@gmail.com> - 8.2.7-1
+- Update to 8.2.7
+
+* Mon Jun 01 2026 Vasiliy Glazov <vascom2@gmail.com> - 8.2.4-1
+- Update to 8.2.4
+
+* Tue May 19 2026 Vasiliy Glazov <vascom2@gmail.com> - 8.2.2-1
+- Update to 8.2.2
+
+* Thu May 14 2026 Jan Grulich <jgrulich@redhat.com> - 8.2.1-2
+- Rebuild (qt6)
+
+* Thu Apr 30 2026 Vasiliy Glazov <vascom2@gmail.com> - 8.2.1-1
+- Update to 8.2.1
+
+* Fri Apr 17 2026 Jan Grulich <jgrulich@redhat.com> - 8.1.8-2
+- Rebuild (qt6)
+
+* Tue Apr 07 2026 Vasiliy Glazov <vascom2@gmail.com> - 8.1.8-1
+- Update to 8.1.8
+
+* Mon Mar 23 2026 Vasiliy Glazov <vascom2@gmail.com> - 8.1.6-1
+- Update to 8.1.6
+
+* Fri Jan 16 2026 Fedora Release Engineering <releng@fedoraproject.org> - 8.0.8-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_44_Mass_Rebuild
+
+* Mon Dec 22 2025 Vasiliy Glazov <vascom2@gmail.com> - 8.0.8-1
+- Update to 8.0.8
+
+* Wed Nov 19 2025 Neal Gompa <ngompa@fedoraproject.org> - 8.0.3-1
+- Rebase to 8.0.3
+- (older history: https://src.fedoraproject.org/rpms/easyeffects)
