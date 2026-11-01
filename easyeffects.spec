@@ -1,7 +1,7 @@
 %global _binary_payload w22T0.zstdio
 
 Name:           easyeffects
-Version:        8.3.1
+Version:        8.3.2
 Release:        1%{?dist}
 Summary:        Audio effects for PipeWire applications
 
@@ -140,6 +140,10 @@ appstream-util validate-relax --nonet %{buildroot}%{_datadir}/metainfo/com.githu
 
 
 %changelog
+* Sun Nov 01 2026 coffeeicus <coffeelover@coffeelover.uk> - 8.3.2-1
+- Update to 8.3.2
+- Full changelog: https://wwmm.github.io/easyeffects/community/CHANGELOG.html
+
 * Sat Oct 31 2026 coffeeicus <coffeelover@coffeelover.uk> - 8.3.1-1
 - Initial COPR build, based on Fedora's easyeffects spec (8.2.8-2)
 - Update to 8.3.1
